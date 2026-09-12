@@ -1,0 +1,43 @@
+schema_version: "1.0"
+
+extension:
+  id: "mvp-complexity-guard"
+  name: "MVP Complexity Guard"
+  version: "1.1.0"
+  description: "Mandatory pre/post implementation semantic gates against unsupported and speculative complexity."
+  author: "local"
+  repository: "https://github.com/example/spec-kit-mvp-complexity-guard"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.16.0,<2.0.0"
+
+provides:
+  commands:
+    - name: "speckit.mvp-complexity-guard.preflight"
+      file: "commands/preflight.md"
+      description: "Read-only MVP complexity gate before implementation."
+
+    - name: "speckit.mvp-complexity-guard.simplify"
+      file: "commands/simplify.md"
+      description: "Read-only simplification gate after implementation."
+
+hooks:
+  before_implement:
+    command: "speckit.mvp-complexity-guard.preflight"
+    priority: 10
+    optional: false
+    description: "Block implementation when spec/plan/tasks contain unsupported or speculative complexity."
+
+  after_implement:
+    command: "speckit.mvp-complexity-guard.simplify"
+    priority: 10
+    optional: false
+    description: "Block completion when implementation contains removable accidental complexity."
+
+tags:
+  - "mvp"
+  - "complexity"
+  - "architecture"
+  - "quality-gate"
+  - "governance"

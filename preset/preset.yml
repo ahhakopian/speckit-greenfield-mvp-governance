@@ -1,0 +1,52 @@
+schema_version: "1.0"
+
+preset:
+  id: "greenfield-mvp-simplicity"
+  name: "Greenfield MVP Simplicity"
+  version: "1.1.0"
+  description: "Adds evidence-driven MVP scope and anti-overengineering rules to core Spec Kit commands."
+  author: "local"
+  repository: "https://github.com/example/spec-kit-greenfield-mvp-simplicity"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.16.0,<2.0.0"
+
+provides:
+  templates:
+    - type: "template"
+      name: "constitution-template"
+      file: "templates/constitution-addendum.md"
+      description: "Adds MVP simplicity and evidence-driven architecture principles."
+      strategy: "append"
+
+    - type: "command"
+      name: "speckit.specify"
+      file: "commands/speckit.specify.md"
+      description: "Adds explicit MVP behavior boundaries and edge-case disposition to specification."
+      strategy: "append"
+
+    - type: "command"
+      name: "speckit.clarify"
+      file: "commands/speckit.clarify.md"
+      description: "Clarifies whether edge cases belong to the MVP before designing behavior for them."
+      strategy: "append"
+
+    - type: "command"
+      name: "speckit.plan"
+      file: "commands/speckit.plan.md"
+      description: "Adds a complexity budget and evidence requirements for architecture decisions."
+      strategy: "append"
+
+    - type: "command"
+      name: "speckit.tasks"
+      file: "commands/speckit.tasks.md"
+      description: "Prevents deferred or unsupported scenarios from becoming speculative implementation tasks."
+      strategy: "append"
+
+tags:
+  - "mvp"
+  - "simplicity"
+  - "greenfield"
+  - "architecture"
+  - "governance"
