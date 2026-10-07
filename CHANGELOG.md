@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 — 2026-10-07
+
+- Added safe in-place upgrades for existing composed projects while preserving unrelated overlay and local changes.
+- Detects conflicts before upgrade writes begin, improves rollback reporting and restoration attempts, and correctly validates registered contributions.
+
 ## 1.2.0 — 2026-10-07
 
 - Added verification strategy as an independent MVP complexity surface, with lowest sufficient layer and incremental evidentiary value rules.

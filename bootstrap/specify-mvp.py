@@ -373,6 +373,54 @@ def cmd_doctor(argv: list[str]) -> None:
         raise SystemExit(2)
 
 
+def safe_upgrade(project_root: Path, source: Path) -> None:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("mvp_safe_upgrade", Path(__file__).with_name("safe_upgrade.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        changed = module.upgrade_project(project_root, source, project_uses_codex(project_root))
+    except Exception as exc:
+        die(f"safe upgrade conflict: {exc}; project was not reinstalled. Reconcile the conflict before retrying")
+    print(f"Safely upgraded MVP governance ({len(changed)} files changed)")
+
+
+def cmd_upgrade_project(argv: list[str]) -> None:
+    parser = argparse.ArgumentParser(prog="specify-mvp upgrade-project")
+    parser.add_argument("project", nargs="?", default=".")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--no-sync", action="store_true")
+    mode.add_argument("--source", type=Path, help="local governance checkout; no global configuration or sync required")
+    args = parser.parse_args(argv)
+    source = args.source.expanduser().resolve() if args.source else SOURCE_DIR
+    if args.source:
+        validate_source(source)
+    elif args.no_sync:
+        validate_source()
+    else:
+        sync_source()
+    project_root = Path(args.project).expanduser().resolve()
+    safe_upgrade(project_root, source)
+
+
+def project_has_installation_state(project_root: Path) -> bool:
+    installed = False
+    for kind, component in (("presets", PRESET_ID), ("extensions", EXTENSION_ID)):
+        directory = project_root / ".specify" / kind
+        installed = installed or (directory / component).exists() or (directory / component).is_symlink()
+        registry = directory / ".registry"
+        if registry.exists() or registry.is_symlink():
+            try:
+                data = json.loads(registry.read_text(encoding="utf-8"))
+                entries = data[kind]
+                if not isinstance(entries, dict):
+                    raise ValueError("component entries are not a mapping")
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                die(f"cannot determine installed ownership from {registry}: {exc}; refusing normal installation")
+            installed = installed or component in entries
+    return installed
+
+
 def cmd_ensure_project(argv: list[str]) -> None:
     parser = argparse.ArgumentParser(prog="specify-mvp ensure-project")
     parser.add_argument("project", nargs="?", default=".")
@@ -387,7 +435,10 @@ def cmd_ensure_project(argv: list[str]) -> None:
     project_root = Path(args.project).expanduser().resolve()
     if not (project_root / ".specify").is_dir():
         die(f"{project_root} is not an initialized Spec Kit project")
-    install_missing_components(project_root, int(config.get("priority", DEFAULT_PRIORITY)), False)
+    if project_has_installation_state(project_root):
+        safe_upgrade(project_root, SOURCE_DIR)
+    else:
+        install_missing_components(project_root, int(config.get("priority", DEFAULT_PRIORITY)), False)
     verify_project(project_root)
 
 
@@ -398,6 +449,8 @@ def cmd_init(argv: list[str]) -> None:
     cwd = Path.cwd()
     project_root = infer_project_root(argv, cwd)
     had_specify_before = (project_root / ".specify").is_dir()
+    if had_specify_before:
+        die("project already has .specify/; use 'specify-mvp upgrade-project' for installed governance or 'ensure-project' for first installation")
 
     init_args = list(argv)
     extension_was_in_init = False
@@ -431,6 +484,7 @@ def usage() -> None:
   specify-mvp sync
   specify-mvp doctor
   specify-mvp ensure-project [PROJECT] [--no-sync]
+  specify-mvp upgrade-project [PROJECT] [--no-sync | --source CHECKOUT]
   specify-mvp init <normal specify init arguments...>
 
 Examples:
@@ -450,6 +504,7 @@ def main() -> None:
         "sync": cmd_sync,
         "doctor": cmd_doctor,
         "ensure-project": cmd_ensure_project,
+        "upgrade-project": cmd_upgrade_project,
         "init": cmd_init,
     }
     fn = commands.get(command)

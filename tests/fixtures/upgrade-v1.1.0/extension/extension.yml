@@ -3,11 +3,11 @@ schema_version: "1.0"
 extension:
   id: "mvp-complexity-guard"
   name: "MVP Complexity Guard"
-  version: "1.2.1"
-  description: "Mandatory pre/post implementation semantic gates against unsupported architecture and disproportionate verification complexity."
-  author: "ahhakopian"
-  repository: "https://github.com/ahhakopian/speckit-greenfield-mvp-governance"
-  license: "None"
+  version: "1.1.0"
+  description: "Mandatory pre/post implementation semantic gates against unsupported and speculative complexity."
+  author: "local"
+  repository: "https://github.com/example/spec-kit-mvp-complexity-guard"
+  license: "MIT"
 
 requires:
   speckit_version: ">=0.16.0,<2.0.0"
@@ -27,13 +27,13 @@ hooks:
     command: "speckit.mvp-complexity-guard.preflight"
     priority: 10
     optional: false
-    description: "Block implementation when spec/plan/tasks contain unsupported architecture or disproportionate verification complexity."
+    description: "Block implementation when spec/plan/tasks contain unsupported or speculative complexity."
 
   after_implement:
     command: "speckit.mvp-complexity-guard.simplify"
     priority: 10
     optional: false
-    description: "Block completion when implementation or verification contains removable accidental complexity."
+    description: "Block completion when implementation contains removable accidental complexity."
 
 tags:
   - "mvp"

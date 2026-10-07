@@ -35,7 +35,7 @@ def table_rows(document):
 class GovernanceContractTests(unittest.TestCase):
     def test_extension_preserves_mandatory_entrypoints_and_compatibility(self):
         manifest = read("extension/extension.yml")
-        self.assertIn('  version: "1.2.0"', manifest)
+        self.assertIn('  version: "1.2.1"', manifest)
         self.assertIn('  speckit_version: ">=0.16.0,<2.0.0"', manifest)
         commands = re.findall(
             r'    - name: "([^"]+)"\n      file: "([^"]+)"', manifest

@@ -3,11 +3,11 @@ schema_version: "1.0"
 preset:
   id: "greenfield-mvp-simplicity"
   name: "Greenfield MVP Simplicity"
-  version: "1.2.1"
+  version: "1.1.0"
   description: "Adds evidence-driven MVP scope and anti-overengineering rules to core Spec Kit commands."
-  author: "ahhakopian"
-  repository: "https://github.com/ahhakopian/speckit-greenfield-mvp-governance"
-  license: "None"
+  author: "local"
+  repository: "https://github.com/example/spec-kit-greenfield-mvp-simplicity"
+  license: "MIT"
 
 requires:
   speckit_version: ">=0.16.0,<2.0.0"

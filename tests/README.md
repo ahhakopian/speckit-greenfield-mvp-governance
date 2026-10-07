@@ -1,6 +1,6 @@
 # Verification governance regression checks
 
-Run the dependency-free artifact contract checks from the repository root:
+Run the artifact contract and safe-upgrade checks (Python with `PyYAML`, also a Spec Kit dependency) from the repository root:
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -8,7 +8,15 @@ python3 -m unittest discover -s tests -v
 
 These checks validate command/hook wiring, append composition, planning structures,
 blocking-policy consistency, fixture references, the single read-only Codex role,
-independent dispatch/return/remediation contracts, and bootstrap provisioning.
+independent dispatch/return/remediation contracts, bootstrap provisioning, and
+in-place upgrades. `test_safe_upgrade.py` builds an isolated composed project from
+`fixtures/upgrade-v1.1.0/` (the actual package files at commit `0ab5802`). It checks
+component files, version/hash registry fields, shared contribution deltas,
+controller provisioning/updates, and exact preservation of other overlays, local
+edits, hook order, workflow runs, artifacts, approvals, and implementation files.
+Edited/duplicate contributions and conflicting ownership/controller definitions
+must stop before any project write. The command routing tests prohibit reinstall
+and verify repeated upgrades are idempotent.
 They do not implement a second
 semantic guard or claim to execute an LLM review.
 

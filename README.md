@@ -36,9 +36,9 @@ are unchanged; an unavailable controller blocks rather than allowing self-review
 
 Two command entrypoints are used intentionally. Current Spec Kit hook manifests reference a command identifier; they do not provide a hook-command argument slot for a `mode=pre|post` parameter. Separate entrypoints make hook behavior deterministic while keeping one extension and one policy.
 
-## Local installation
+## Local first installation
 
-Run from an already initialized Spec Kit project:
+Use this path only when neither MVP-governance component is installed. Run from an already initialized Spec Kit project:
 
 ```bash
 specify preset add --dev /absolute/path/to/greenfield-mvp-governance/preset --priority 10
@@ -72,6 +72,58 @@ For preset resolution debugging:
 ```bash
 specify preset resolve constitution-template
 ```
+
+## Upgrade an existing composed project
+
+Use the current checkout's safe in-place updater from your project directory:
+
+```bash
+python3 /absolute/path/to/greenfield-mvp-governance/bootstrap/specify-mvp.py \
+  upgrade-project . --source /absolute/path/to/greenfield-mvp-governance
+```
+
+The Python environment running the updater must include `PyYAML`, which is also
+a Spec Kit dependency. No global bootstrap configuration or network access is
+required with `--source`.
+
+With the global bootstrap configured, first sync to obtain the current bootstrap
+(including the new upgrade command), then upgrade from that synced checkout:
+
+```bash
+specify-mvp sync
+specify-mvp upgrade-project . --no-sync
+```
+
+Subsequent `specify-mvp upgrade-project .` calls sync the configured ref and upgrade
+the project in place. `sync` alone only refreshes the machine-managed source.
+
+Do not use `specify preset add`, `specify extension add`, remove/re-add, or
+`specify init --force` to upgrade an installed component in a composed project.
+Those operations can recompose other overlays and regenerate shared commands,
+skills, and hook configuration.
+
+The updater checks the installed preset and extension manifests against their
+registry versions and SHA256 hashes, then uses their installed contributions as
+its baseline. It updates component-owned manifest, command, template, and agent
+files directly. In shared commands, composed caches (including caches owned by
+another overlay), and Codex skills, it replaces only a uniquely matching MVP
+contribution. It edits only this component's registry version/hash values and
+changed manifest-owned hook fields, preserving other entries, comments, hook
+order, enabled flags, and unrelated local configuration. The Codex controller is
+provisioned if missing and updated if it matches its installed baseline.
+
+Workflow runs, live constitution, project artifacts, approvals, implementation
+files, other agents, and unrelated overlays remain unchanged. A repeat upgrade
+with the same source makes no further changes. This mechanism supports the
+current append preset, guard commands, and Codex Markdown/skill layouts. Changed
+contribution topology or other registered integration formats require explicit
+migration support and produce a conflict.
+
+All attribution checks finish before writing. Missing or mismatched ownership
+metadata, edited/duplicate shared contributions, conflicting controller files,
+or symlinked targets produce a clear `safe upgrade conflict` and leave project
+files unchanged. Reconcile the identified conflict and retry; the updater never
+falls back to reinstall or regeneration.
 
 ## Recommended greenfield workflow
 
@@ -154,7 +206,7 @@ use:
 specify-mvp init --here --integration codex
 ```
 
-For an existing non-empty repository:
+For a non-empty repository that has not yet been initialized with Spec Kit:
 
 ```bash
 specify-mvp init --here --force --integration codex
@@ -197,14 +249,17 @@ specify-mvp doctor
 # Pull the configured GitHub ref now
 specify-mvp sync
 
-# Add/verify governance in an already initialized Spec Kit project
+# First installation, or safe upgrade if governance is already installed
 specify-mvp ensure-project .
+
+# Safely upgrade an existing composed project
+specify-mvp upgrade-project .
 
 # Initialize a new governed project
 specify-mvp init --here --force --integration codex
 ```
 
-`ensure-project` does not rewrite an existing project's constitution. It installs missing components and the Codex controller, and fails verification if the project constitution does not contain the MVP policy. An existing controller definition that differs from the supplied file must be reconciled before retrying; the bootstrap does not overwrite it.
+`ensure-project` uses normal installation only when no MVP-governance installation state exists. Once either component has installation state, it uses the same safe updater as `upgrade-project`; partial or conflicting installations stop for reconciliation. It also verifies the existing constitution contains the MVP policy without rewriting it. `upgrade-project` preserves authored policy and does not require constitution reconciliation to apply the component update. `init` refuses projects that already contain `.specify/` and directs them to these existing-project commands.
 
 ### Updating all future projects
 
