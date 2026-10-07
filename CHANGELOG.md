@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 — 2026-10-07
+
+- Added verification strategy as an independent MVP complexity surface, with lowest sufficient layer and incremental evidentiary value rules.
+- Added a planning Verification Complexity Budget and compact Verification Justification; verification tasks follow the justified layer without duplicating expensive edge-case acceptance.
+- Extended the existing mandatory preflight/simplify gates to block materially expensive or architecture-affecting verification complexity while preserving conclusive safety coverage.
+- Clarified that acceptance criteria define required claims rather than the highest proof layer.
+- Added verification regression fixtures and dependency-free governance contract checks; extension hooks and the existing Spec Kit compatibility range remain unchanged.
+
 ## 1.1.0 — 2026-09-12
 
 - Added GitHub-backed global bootstrap at `bootstrap/specify-mvp.py`.

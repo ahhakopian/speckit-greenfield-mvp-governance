@@ -3,7 +3,7 @@
 
 One-time setup:
     python3 bootstrap/specify-mvp.py install-global \
-      --repo https://github.com/<owner>/speckit-greenfield-mvp-governance.git
+      --repo https://github.com/ahhakopian/speckit-greenfield-mvp-governance.git
 
 Then initialize any new project with:
     specify-mvp init --here --integration codex --force
@@ -11,7 +11,8 @@ Then initialize any new project with:
 The wrapper syncs the governance source from GitHub, delegates project
 initialization to the installed `specify` CLI, installs the MVP Complexity Guard
 during init when the CLI supports `--extension`, installs the MVP Simplicity
-preset, and verifies the resulting project.
+preset, provisions the independent reviewer for Codex, and verifies the resulting
+project.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from typing import Iterable
 APP_ID = "speckit-greenfield-mvp-governance"
 PRESET_ID = "greenfield-mvp-simplicity"
 EXTENSION_ID = "mvp-complexity-guard"
+CONTROLLER_FILE = "mvp-simplicity-controller.toml"
 DEFAULT_PRIORITY = 10
 CONFIG_DIR = Path(os.environ.get("SPECKIT_MVP_GOVERNANCE_HOME", Path.home() / ".config" / APP_ID)).expanduser()
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -107,6 +109,7 @@ def validate_source(source: Path = SOURCE_DIR) -> None:
     required = [
         source / "preset" / "preset.yml",
         source / "extension" / "extension.yml",
+        source / "extension" / "agents" / CONTROLLER_FILE,
         source / "bootstrap" / "specify-mvp.py",
     ]
     missing = [str(p) for p in required if not p.is_file()]
@@ -236,6 +239,35 @@ def install_missing_components(project_root: Path, priority: int, extension_was_
     else:
         print(f"Extension already installed: {EXTENSION_ID}")
 
+    if project_uses_codex(project_root):
+        install_simplicity_controller(project_root)
+
+
+def project_uses_codex(project_root: Path) -> bool:
+    options = project_root / ".specify" / "init-options.json"
+    if not options.exists():
+        return (project_root / ".codex").is_dir()
+    try:
+        data = json.loads(options.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        die(f"cannot read Spec Kit integration options ({options}): {exc}")
+    return isinstance(data, dict) and data.get("ai") == "codex"
+
+
+def install_simplicity_controller(project_root: Path) -> None:
+    """Provision the one native Codex role without changing Codex settings."""
+    source = SOURCE_DIR / "extension" / "agents" / CONTROLLER_FILE
+    target = project_root / ".codex" / "agents" / CONTROLLER_FILE
+    content = source.read_text(encoding="utf-8")
+    if target.exists():
+        if target.read_text(encoding="utf-8") != content:
+            die(f"existing controller differs from governance source: {target}; reconcile it before retrying")
+        print("MVP simplicity controller already installed")
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+    print("Installed Codex agent: mvp-simplicity-controller")
+
 
 def ensure_fresh_constitution_addendum(project_root: Path) -> None:
     """Guarantee the MVP policy is present for a freshly initialized project.
@@ -267,6 +299,13 @@ def verify_project(project_root: Path) -> None:
         problems.append(f"preset {PRESET_ID} is not installed")
     if not project_has_component(project_root, "extension", EXTENSION_ID):
         problems.append(f"extension {EXTENSION_ID} is not installed")
+    if project_uses_codex(project_root):
+        controller = project_root / ".codex" / "agents" / CONTROLLER_FILE
+        source = SOURCE_DIR / "extension" / "agents" / CONTROLLER_FILE
+        if not controller.is_file():
+            problems.append("Codex agent mvp-simplicity-controller is not installed")
+        elif controller.read_text(encoding="utf-8") != source.read_text(encoding="utf-8"):
+            problems.append("Codex agent mvp-simplicity-controller differs from governance source")
     constitution = project_root / ".specify" / "memory" / "constitution.md"
     if constitution.is_file():
         if "## MVP Simplicity and Evidence-Driven Architecture" not in constitution.read_text(encoding="utf-8"):

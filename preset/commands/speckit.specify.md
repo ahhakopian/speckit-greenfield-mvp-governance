@@ -38,3 +38,5 @@ A discovered possibility is not a requirement. Record it under `Deferred` when i
 ### 4. Keep acceptance criteria aligned with scope
 
 Acceptance criteria MUST test the supported path, critical/safety failure behavior, and explicit rejection boundaries. They MUST NOT silently require generalized support for deferred scenarios.
+
+Acceptance criteria define what must be proved; they do not require every case to be reproduced at the highest verification layer. Keep supported paths, critical/safety failures, and explicit rejection boundaries covered; verification architecture belongs in planning, not specification design.

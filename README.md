@@ -26,6 +26,14 @@ Two mandatory hooks:
 
 Both reviews are read-only. A CRITICAL/HIGH finding returns `MVP_COMPLEXITY_GUARD: BLOCK`.
 
+Both existing commands route their mandatory review to one native Codex agent,
+`mvp-simplicity-controller`, in a separate execution from the author/executor.
+The controller reads the existing guard command instructions directly and returns
+their complete PASS/BLOCK result and findings. It does not edit artifacts or fix
+findings. On BLOCK, the original author/executor remediates and reruns the same
+guard through the controller. The hook stages, timing, policy, and output contract
+are unchanged; an unavailable controller blocks rather than allowing self-review.
+
 Two command entrypoints are used intentionally. Current Spec Kit hook manifests reference a command identifier; they do not provide a hook-command argument slot for a `mode=pre|post` parameter. Separate entrypoints make hook behavior deterministic while keeping one extension and one policy.
 
 ## Local installation
@@ -36,6 +44,20 @@ Run from an already initialized Spec Kit project:
 specify preset add --dev /absolute/path/to/greenfield-mvp-governance/preset --priority 10
 specify extension add --dev /absolute/path/to/greenfield-mvp-governance/extension --priority 10
 ```
+
+For Codex, install the shared agent using its native project-local agent directory:
+
+```bash
+mkdir -p .codex/agents
+cp -n /absolute/path/to/greenfield-mvp-governance/extension/agents/mvp-simplicity-controller.toml .codex/agents/
+```
+
+If that agent file already exists, ensure it matches the supplied definition.
+Start a Codex session that loads the project's agents and supports subagent
+execution. The role requests `sandbox_mode = "read-only"` and inherits model
+selection. See [Codex custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+The bootstrap below provisions and verifies this same definition for Codex
+projects automatically, without changing Codex configuration or other roles.
 
 Verify:
 
@@ -157,9 +179,11 @@ specify init
       ↓
 installs greenfield-mvp-simplicity preset
       ↓
+provisions mvp-simplicity-controller for Codex
+      ↓
 verifies fresh-project constitution contains MVP simplicity policy
       ↓
-verifies preset + extension are enabled
+verifies preset + extension + Codex controller
 ```
 
 Spec Kit 0.16.2 already supports repeatable `--extension` during `specify init` for bundled names, catalog IDs, local directories, and HTTPS URLs. The preset init option accepts a preset ID rather than a local directory, so the bootstrap installs the locally synced preset immediately after init. For a freshly created project it then verifies the generated constitution and adds the MVP addendum only if Spec Kit has not already reconciled it.
@@ -180,7 +204,7 @@ specify-mvp ensure-project .
 specify-mvp init --here --force --integration codex
 ```
 
-`ensure-project` does not rewrite an existing project's constitution. It installs missing components and fails verification if the project constitution does not contain the MVP policy; this keeps automatic mutation limited to genuinely fresh initialization.
+`ensure-project` does not rewrite an existing project's constitution. It installs missing components and the Codex controller, and fails verification if the project constitution does not contain the MVP policy. An existing controller definition that differs from the supplied file must be reconciled before retrying; the bootstrap does not overwrite it.
 
 ### Updating all future projects
 

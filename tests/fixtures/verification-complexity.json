@@ -1,0 +1,115 @@
+{
+  "common": {
+    "spec.md": "## MVP Behavior Boundary\n### Supported\nEdit the exact intended page target through a Chrome extension.\n### Handled Failures\nReject invalid or stale authorization safely; recover exactly or reject safely after a worker restart.\n### Explicitly Unsupported\nTargets outside the declared permissions are rejected.\n### Deferred\nNo additional target types.\n## Edge Case Disposition\n| Edge case | Impact | Likelihood | Disposition | Evidence / rationale |\n|---|---|---|---|---|\n| Invalid authorization or stale target | Wrong-target edit | Normal failure boundary | Handle | Safety: never authorize the wrong target |\n",
+    "plan.md": "## Complexity Budget\nNo new architectural layers, generic frameworks, or future extensibility. Keep the direct extension implementation and its required authorization state.\n## Architecture Justification\nChrome runtime integration is required for supported editing. Authorization state is required to prevent wrong-target edits. No other infrastructure is required.\n## Verification Complexity Budget\nUse the planning addendum defaults. Any proposed exception is stated in the case below; do not assume it is justified merely because it appears in the plan.\n",
+    "review_scope": "Append each case's spec.md, plan.md, and tasks.md to the common artifacts and review that case independently. For simplify, treat implemented_verification as the materially changed asset description, with the case's tasks completed. No other architecture or scope findings exist. These are governance fixtures, not feature implementation or browser tests."
+  },
+  "cases": [
+    {
+      "id": "native-context-menu",
+      "spec.md": "FR-001: A real Chrome context-menu command activates the exact intended page target. Acceptance: issue the native command and observe the intended target activate; another target must not activate.",
+      "plan.md": "## Verification Justification\n| Claim | Requirement / source | Lowest sufficient layer | Higher layer required? | Incremental evidence provided by higher layer |\n|---|---|---|---|---|\n| Native command activates exact target | FR-001 | real browser | Yes: Chrome boundary above integration | Actual Chrome native context-menu routing and target-page DOM activation, which mocked routing cannot prove |\nDeterministic integration coverage already proves internal target identity matching. One representative native-command case is planned; no fault injection or test hooks.",
+      "tasks.md": "- [ ] T001 Verify the real Chrome native context-menu command activates the intended page target using observable DOM behavior (source: FR-001).",
+      "implemented_verification": "One browser scenario issues the actual native command and asserts activation on the exact target DOM element. Internal identity matching remains covered by deterministic integration tests.",
+      "expected": {
+        "preflight": "PASS",
+        "simplify": "PASS",
+        "severity": null,
+        "rules": [],
+        "disposition": "KEEP",
+        "reason": "Chrome native routing materially participates in the claim; lower proof cannot establish that boundary."
+      }
+    },
+    {
+      "id": "mv3-worker-restart",
+      "spec.md": "FR-002: After an actual Chrome MV3 worker restart, Edit results in exact valid recovery or safe rejection; an unrelated target must never be edited.",
+      "plan.md": "## Verification Justification\n| Claim | Requirement / source | Lowest sufficient layer | Higher layer required? | Incremental evidence provided by higher layer |\n|---|---|---|---|---|\n| Recovery or rejection after actual restart | FR-002 / SECURITY | real browser | Yes: browser-owned lifecycle | Actual Chrome worker termination/recreation and resulting runtime handoff, which a state-machine simulation cannot prove |\nIntegration tests cover recovery/rejection transitions exhaustively. One representative actual worker restart is planned. The external lifecycle is the failure source being validated; no direct internal-state mutation.",
+      "tasks.md": "- [ ] T002 Verify exact valid recovery or safe rejection after an actual Chrome MV3 worker restart (source: FR-002 / SECURITY).",
+      "implemented_verification": "One browser test causes an actual Chrome worker restart and observes valid target recovery or safe rejection. Integration tests retain exhaustive state transition coverage.",
+      "expected": {
+        "preflight": "PASS",
+        "simplify": "PASS",
+        "severity": null,
+        "rules": [],
+        "disposition": "KEEP",
+        "reason": "The real worker lifecycle is browser-owned. Exercising that lifecycle qualifies for the external-runtime exception, without authorizing unrelated internal fault construction."
+      }
+    },
+    {
+      "id": "consumed-capture-replay",
+      "spec.md": "FR-003 / SECURITY: A consumed capture cannot authorize another Edit.",
+      "plan.md": "Integration tests conclusively cover consumed-capture rejection. Browser acceptance must repeat it by restoring and replaying the consumed internal capture via a new test-only hook. The only claimed justification is that the same invariant is also exercised in a real browser. No Chrome-specific obligation exists.",
+      "tasks.md": "- [ ] T003 Add a browser-only state restoration hook and replay consumed captures during browser acceptance (source: FR-003 / SECURITY).",
+      "implemented_verification": "A browser replay test and test-only capture restoration hook duplicate the existing deterministic integration rejection proof.",
+      "expected": {
+        "preflight": "BLOCK",
+        "simplify": "BLOCK",
+        "severity": "HIGH",
+        "rules": ["V-01", "V-02", "V-03", "V-05", "V-07"],
+        "disposition": "DOWNLEVEL",
+        "reason": "Keep conclusive integration proof; remove the unnecessary browser replay and restoration hook. Safety protects the rejection invariant, not browser reproduction."
+      }
+    },
+    {
+      "id": "callback-ordering",
+      "spec.md": "FR-004 / SECURITY: Delayed or ambiguous internal capture/callback ordering must fail safely.",
+      "plan.md": "Exhaustive deterministic integration tests are planned for delayed and ambiguous ordering. Browser acceptance is additionally assigned to the same invariant using artificial delays and synthetic callback ambiguity. No external runtime failure is claimed and no incremental evidence is identified.",
+      "tasks.md": "- [ ] T004 Construct delayed and ambiguous internal callback ordering for browser acceptance using artificial timing controls (source: FR-004 / SECURITY).",
+      "implemented_verification": "Browser acceptance installs an artificial timing controller and synthetic callbacks solely to reproduce the internal invariant. The planned deterministic integration matrix has also been implemented.",
+      "expected": {
+        "preflight": "BLOCK",
+        "simplify": "BLOCK",
+        "severity": "HIGH",
+        "rules": ["V-01", "V-03", "V-05", "V-07"],
+        "additional_simplify_rules": ["V-02"],
+        "disposition": "DOWNLEVEL",
+        "reason": "Deterministic ordering proof is sufficient, including planned lower-level proof at preflight. At simplify the lower proof exists, so V-02 also applies. Remove browser timing machinery while retaining exhaustive safe-failure coverage."
+      }
+    },
+    {
+      "id": "stale-target-variants",
+      "spec.md": "FR-005 / SECURITY: Disconnected, replacement, and superseded/stale targets must never authorize Edit on an invalid target.",
+      "plan.md": "Exhaustive deterministic integration coverage proves all three target invalidation variants. One representative real-browser stale-target case proves integration with real target-page DOM invalidation. Nevertheless, three separate expensive browser acceptance scenarios are required for the same invariant; the extra variants identify no additional runtime boundary.",
+      "tasks.md": "- [ ] T005 Run separate real-browser acceptance scenarios for disconnected, replacement, and superseded/stale targets, in addition to exhaustive integration coverage (source: FR-005 / SECURITY).",
+      "implemented_verification": "Three expensive browser scenarios reproduce the same stale-target invariant. Integration tests exhaustively cover all variants; one representative browser case suffices to establish actual DOM invalidation behavior.",
+      "expected": {
+        "preflight": "BLOCK",
+        "simplify": "BLOCK",
+        "severity": "HIGH",
+        "rules": ["V-01", "V-02", "V-04", "V-07"],
+        "disposition": "MERGE",
+        "reason": "Keep one representative real-DOM stale-target case and exhaustive deterministic variants. Merge/remove the redundant expensive scenarios without dropping any rejection requirement."
+      }
+    },
+    {
+      "id": "permission-evidence",
+      "spec.md": "FR-006 / SECURITY: Real browser Edit does not broaden permissions. Acceptance requires no broader granted permissions after Edit; there is no separate requirement about internal call identities or timing.",
+      "plan.md": "## Verification Justification\n| Claim | Requirement / source | Lowest sufficient layer | Higher layer required? | Incremental evidence provided by higher layer |\n|---|---|---|---|---|\n| Edit does not broaden actual grants | FR-006 / SECURITY | real browser | Yes: actual Chrome permission behavior | Actual permission grants and prompts in Chrome, which mocked API behavior cannot establish |\nExternally observable Chrome permission evidence is conclusive. Acceptance additionally demands a new tracing subsystem for every internal permission call, identity, and timestamp, without a distinct current claim requiring it.",
+      "tasks.md": "- [ ] T006 Verify actual Chrome permissions after real Edit and build internal permission-call identity/timestamp tracing for acceptance (source: FR-006 / SECURITY).",
+      "implemented_verification": "A justified browser permission test uses conclusive external grant/prompt evidence, but also requires newly built internal call tracing infrastructure for acceptance.",
+      "expected": {
+        "preflight": "BLOCK",
+        "simplify": "BLOCK",
+        "severity": "HIGH",
+        "rules": ["V-06"],
+        "disposition": "SIMPLIFY",
+        "reason": "KEEP actual Chrome permission proof. Remove the materially expensive internal traces/identities/timestamps; no distinct claim needs them. This does not forbid diagnostics needed to establish a different current claim."
+      }
+    },
+    {
+      "id": "t012-over-specified",
+      "spec.md": "FR-007 / SECURITY: Only a current, unconsumed, unambiguous capture for the intended target may authorize Edit. Invalid captures and disconnected/replaced/superseded targets must reject safely.",
+      "plan.md": "Exhaustive integration/state-machine coverage conclusively proves consumption, callback ordering, and all stale-target variants. One representative real-DOM stale-target case is sufficient for runtime integration. T012 nevertheless assigns exhaustive consumed replay, artificial delay/ambiguity, and all stale-target variants to browser acceptance. Add state restoration and timing hooks. Run all cases in multiple browser/profile environments despite no current environment-specific requirement or risk. Acceptance requires internal capture IDs and timestamps even though external rejection evidence suffices. Justification: security-sensitive invariants should also be exercised in a real browser.",
+      "tasks.md": "- [ ] T012 Build browser acceptance with consumed-capture replay, delayed/ambiguous callbacks, disconnected/replacement/superseded targets, test-only restoration/timing hooks, environment permutations, and internal capture identity/timestamp evidence (source: FR-007 / SECURITY).",
+      "implemented_verification": "A materially expensive browser acceptance matrix implements every T012 case, restoration/timing hooks, repeated environment runs, and internal identity/timestamp collection. The conclusive integration matrix and representative real-DOM case also exist.",
+      "expected": {
+        "preflight": "BLOCK",
+        "simplify": "BLOCK",
+        "severity": "HIGH",
+        "rules": ["V-01", "V-02", "V-03", "V-04", "V-05", "V-06", "V-07", "V-08"],
+        "disposition": "DOWNLEVEL / MERGE / REMOVE",
+        "reason": "Consolidate overlapping HIGH findings by proof obligation. Keep conclusive integration coverage and one representative real-DOM boundary; remove needless browser replay/timing, hooks, environment variants, and diagnostic requirements. Security annotations do not protect the method."
+      }
+    }
+  ]
+}
